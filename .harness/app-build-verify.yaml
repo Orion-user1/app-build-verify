@@ -18,7 +18,7 @@ pipeline:
     ci:
       codebase:
         connectorRef: account.github_app_connector
-        repoName: cicd-app-build-and-verify
+        repoName: app-build-and-verify
         build: <+input>
 
   stages:
