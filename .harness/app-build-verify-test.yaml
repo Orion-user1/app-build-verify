@@ -1,0 +1,102 @@
+pipeline:
+  id: app_build_verify_test
+  name: App Build Verify Test
+  description: Builds and verifies a Spring Boot application with lint, secret scan, build, tests, SAST and SCA gates.
+  tags:
+    ai_generated: ""
+  inputs:
+    ref:
+      type: string
+      required: true
+      description: Branch or tag of cicd-app-build-and-verify to check out
+    trigger_type:
+      type: string
+      required: true
+      default: push
+      description: Event type (push or pull_request); Black Duck SCA runs only for pull_request
+  clone:
+    enabled: true
+    connector: connector_Github_387a
+    repo: cicd-app-build-and-verify
+    ref:
+      type: branch
+      name: ${{ inputs.ref }}
+  stages:
+  - id: BuildAndVerify
+    name: Build and Verify
+    runtime: cloud
+    platform:
+      os: linux
+      arch: amd64
+    steps:
+    - id: clone_devops_automation
+      template:
+        uses: gitCloneStep
+        with:
+          connector: connector_Github_387a
+          repo_name: DevOps/devops-automation
+          build:
+            target: Git Branch
+            branch: main
+          clone_directory: devops-automation
+    - id: lint
+      name: Lint
+      run:
+        script: |
+          echo "Running code quality checks..."
+          python3 devops-automation/scripts/lint.py
+    - id: secret_scan
+      name: Secret Scan
+      run:
+        script: |
+          echo "Scanning for exposed secrets..."
+          python3 devops-automation/scripts/secret_scan.py
+    - id: dependencies
+      name: Install Dependencies
+      run:
+        script: |
+          echo "Resolving dependencies from JFrog Artifactory..."
+          mvn dependency:resolve -B
+    - id: build
+      name: Build
+      run:
+        script: |
+          echo "Building application..."
+          mvn clean package -DskipTests -B
+          echo "Build complete:"
+          ls -lh target/*.jar
+
+          mkdir -p /harness/outputs
+          cp target/*.jar /harness/outputs/demo.jar
+
+          cat > /harness/outputs/build-info.json <<EOF
+          {
+            "jarFile": "demo.jar",
+            "jarPath": "/harness/outputs/demo.jar",
+            "commitSha": "${{ codebase.commitSha }}",
+            "branch": "${{ codebase.branch }}",
+            "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          }
+          EOF
+
+          echo "JAR saved at: /harness/outputs/demo.jar"
+    - id: tests
+      name: Unit Tests
+      run-test:
+        script: |
+          echo "Running unit tests with coverage..."
+          mvn test -B
+    - id: coverity
+      name: Coverity SAST
+      run:
+        script: |
+          echo "Running Coverity SAST scan..."
+          python3 devops-automation/scripts/coverity.py
+    - id: blackduck
+      name: Black Duck SCA
+      if: ${{ inputs.trigger_type == "pull_request" }}
+      run:
+        script: |
+          echo "Running Black Duck SCA scan..."
+          python3 devops-automation/scripts/blackduck.py
+          echo "Results uploaded to Black Duck SRM"
