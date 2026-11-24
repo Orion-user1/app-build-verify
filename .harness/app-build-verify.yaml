@@ -13,8 +13,8 @@
 pipeline:
   name: SpringBoot Build and Verify
   identifier: cicd_app_build_verify
-  projectIdentifier: <+project.identifier>
-  orgIdentifier: <+org.identifier>
+  projectIdentifier: default_project
+  orgIdentifier: default
 
   #═════════════════════════════════════════════════════════════════════════════
   # 🔔 TRIGGER CONFIGURATION
