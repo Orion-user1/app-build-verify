@@ -11,7 +11,7 @@ pipeline:
   identifier: cicd_app_build_verify
   # Must be literal values (expressions are not allowed here).
   # Replace with your real IDs, or use "default" for the default org.
-  projectIdentifier: YOUR_PROJECT_ID
+  projectIdentifier: default_project
   orgIdentifier: default
 
   properties:
