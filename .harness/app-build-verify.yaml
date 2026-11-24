@@ -1,93 +1,18 @@
-################################################################################
-#                                                                              #
-#           🚀                           #
-#                                                                              #
-#  Pipeline:  cicd-app-build-verify                                            #
-#  Purpose:   Automated CI/CD for Spring Boot applications                     #
-#  Trigger:   Auto-detect Push/PR/Merge from GitHub                            #
-#  Steps:     7 automated quality gates                                        #
-#  Runtime:   Harness Cloud                                                    #
-#                                                                              #
-################################################################################
-
 pipeline:
+  id: SpringBoot Build and Verify
   name: SpringBoot Build and Verify
   identifier: default
   projectIdentifier: default_project
   orgIdentifier: default
-
-  #═════════════════════════════════════════════════════════════════════════════
-  # 🔔 TRIGGER CONFIGURATION
-  #═════════════════════════════════════════════════════════════════════════════
-  # Automatically starts pipeline on GitHub events:
-  #   ✓ Push to feature/* branches
-  #   ✓ Pull requests to main branch
-  #   ✓ Merges to main branch
-  #─────────────────────────────────────────────────────────────────────────────
-
-  triggers:
-    - trigger:
-        name: GitHub Auto Trigger
-        identifier: github_auto_trigger
-        enabled: true
-        source:
-          type: Webhook
-          spec:
-            type: Github
-            spec:
-              type: Any
-              spec:
-                connectorRef: account.github_app_connector
-                autoAbortPreviousExecutions: false
-
-  #═════════════════════════════════════════════════════════════════════════════
-  # 📊 PIPELINE VARIABLES
-  #═════════════════════════════════════════════════════════════════════════════
-  # Runtime variables to capture event information
-  #─────────────────────────────────────────────────────────────────────────────
-
-  variables:
-    - name: triggerType
-      type: String
-      value: <+trigger.event>
-
-  #═════════════════════════════════════════════════════════════════════════════
-  # 📦 REPOSITORY CONFIGURATION
-  #═════════════════════════════════════════════════════════════════════════════
-  # Defines Git repositories to clone into pipeline workspace
-  #─────────────────────────────────────────────────────────────────────────────
-
-  properties:
-    ci:
-
-      #───────────────────────────────────────────────────────────────────────
-      # 📂 PRIMARY REPOSITORY - Application Code
-      #───────────────────────────────────────────────────────────────────────
-
-      codebase:
-        connectorRef: account.github_app_connector
-        repoName: cicd-app-build-and-verify
-        build: <+input>.default(<+trigger.branch>)
-
-      #───────────────────────────────────────────────────────────────────────
-      # 🔧 ADDITIONAL REPOSITORIES - DevOps Scripts
-      #───────────────────────────────────────────────────────────────────────
-      # Auto-clones shared automation scripts from corporate DevOps repo
-      # - Clones to: /workspace/devops-automation/
-      # - Contains: lint.py, secret_scan.py, coverity.py, blackduck.py
-      #───────────────────────────────────────────────────────────────────────
-
-      additionalRepositories:
-        - identifier: devops_automation
-          connectorRef: account.github_devops_connector
-          repoName: DevOps/devops-automation
-          path: devops-automation
-          branch: main
-
-  #═════════════════════════════════════════════════════════════════════════════
-  # ⚙️ PIPELINE STAGES
-  #═════════════════════════════════════════════════════════════════════════════
-
+  
+  clone:
+    enabled: true
+    connector: connector_Github_6538
+    repo: Orion-user1/app-build-verify
+    ref:
+      type: branch
+      name: ${{ inputs.branch }}
+  
   stages:
     - stage:
         name: Build and Verify
@@ -99,19 +24,8 @@ pipeline:
             type: Cloud
             spec: {}
 
-          #═══════════════════════════════════════════════════════════════════
-          # 🎯 EXECUTION STEPS (7 Automated Quality Gates)
-          #═══════════════════════════════════════════════════════════════════
-
           execution:
             steps:
-
-              #─────────────────────────────────────────────────────────────
-              # STEP 1/7: 🔍 Code Quality Check
-              #─────────────────────────────────────────────────────────────
-              # Tool: lint.py
-              #─────────────────────────────────────────────────────────────
-
               - step:
                   type: Run
                   name: Lint
@@ -121,12 +35,6 @@ pipeline:
                     command: |
                       echo "🔍 Running code quality checks..."
                       python3 devops-automation/scripts/lint.py
-
-              #─────────────────────────────────────────────────────────────
-              # STEP 2/7: 🔒 Secret Detection
-              #─────────────────────────────────────────────────────────────
-              # Tool: secret_scan.py
-              #─────────────────────────────────────────────────────────────
 
               - step:
                   type: Run
@@ -138,12 +46,6 @@ pipeline:
                       echo "🔒 Scanning for exposed secrets..."
                       python3 devops-automation/scripts/secret_scan.py
 
-              #─────────────────────────────────────────────────────────────
-              # STEP 3/7: 📦 Dependency Resolution
-              #─────────────────────────────────────────────────────────────
-              # Tool: Maven + JFrog
-              #─────────────────────────────────────────────────────────────
-
               - step:
                   type: Run
                   name: Install Dependencies
@@ -153,12 +55,6 @@ pipeline:
                     command: |
                       echo "📦 Resolving dependencies from JFrog Artifactory..."
                       mvn dependency:resolve -B
-
-              #─────────────────────────────────────────────────────────────
-              # STEP 4/7: 🔨 Application Build
-              #─────────────────────────────────────────────────────────────
-              # Tool: Maven
-              #─────────────────────────────────────────────────────────────
 
               - step:
                   type: Run
@@ -197,12 +93,6 @@ pipeline:
                       echo "✅ JAR saved at: /harness/outputs/demo.jar"
                       echo "📋 Metadata: /harness/outputs/build-info.json"
 
-              #─────────────────────────────────────────────────────────────
-              # STEP 5/7: 🧪 Unit Testing
-              #─────────────────────────────────────────────────────────────
-              # Tool: JUnit
-              #─────────────────────────────────────────────────────────────
-
               - step:
                   type: Run
                   name: Unit Tests
@@ -213,12 +103,6 @@ pipeline:
                       echo "🧪 Running unit tests with coverage..."
                       mvn test -B
 
-              #─────────────────────────────────────────────────────────────
-              # STEP 6/7: 🛡️ Security Scan (SAST)
-              #─────────────────────────────────────────────────────────────
-              # Tool: Coverity
-              #─────────────────────────────────────────────────────────────
-
               - step:
                   type: Run
                   name: Coverity SAST
@@ -228,15 +112,6 @@ pipeline:
                     command: |
                       echo "🛡️ Running Coverity SAST scan..."
                       python3 devops-automation/scripts/coverity.py
-
-              #─────────────────────────────────────────────────────────────
-              # STEP 7/7: 🔍 Component Scan (SCA)
-              #─────────────────────────────────────────────────────────────
-              # Tool: Black Duck
-              # Scans libraries for known vulnerabilities and licenses
-              # Reports stay in Black Duck SRM
-              # Execution: Pull requests and merges only
-              #─────────────────────────────────────────────────────────────
 
               - step:
                   type: Run
