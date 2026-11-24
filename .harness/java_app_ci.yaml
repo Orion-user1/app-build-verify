@@ -12,7 +12,7 @@ pipeline:
   clone:
     enabled: true
     connector: connector_Github_6538
-    repo: Orion-user1/Test-app-repo
+    repo: Orion-user1/a--build-verify
     ref:
       type: branch
       name: ${{ inputs.branch }}
