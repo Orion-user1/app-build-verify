@@ -17,7 +17,7 @@ pipeline:
   clone:
     enabled: true
     connector: connector_Github_387a
-    repo: cicd-app-build-and-verify
+    repo: app-build-verify
     ref:
       type: branch
       name: ${{ inputs.ref }}
