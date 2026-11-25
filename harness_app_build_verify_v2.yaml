@@ -1,4 +1,6 @@
-pipeline:
+
+#######
+ipeline:
   id: harness_app_build_verify_v2
   name: SpringBoot Build and Verify
   description: Automated CI for Spring Boot applications with lint, secret scan, build, tests, SAST and SCA quality gates.
