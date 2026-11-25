@@ -1,7 +1,7 @@
 pipeline:
   id: cicd_app_build_verify
   name: SpringBoot Build and Verify
-  description: Automated CI for Spring Boot applications with lint, secret scan, build and SCA quality gates.
+  description: Automated CI for Spring Boot applications with lint, secret scan, build, tests, SAST and SCA quality gates.
   inputs:
     branch:
       type: string
@@ -76,6 +76,18 @@ pipeline:
 
               echo "JAR saved at: /harness/outputs/demo.jar"
               echo "Metadata: /harness/outputs/build-info.json"
+        - id: tests
+          name: Unit Tests
+          run-test:
+            script: |
+              echo "Running unit tests..."
+              mvn test -B
+        - id: coverity
+          name: Coverity SAST
+          run:
+            script: |
+              echo "Running Coverity SAST scan..."
+              python3 devops-automation/scripts/coverity.py
         - id: blackduck
           name: Black Duck SCA
           if: ${{ codebase.prNumber != "" }}
