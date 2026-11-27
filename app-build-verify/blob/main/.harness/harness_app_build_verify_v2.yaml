@@ -1,4 +1,4 @@
-#####
+
 
 pipeline:
   id: harness_app_build_verify_v2
